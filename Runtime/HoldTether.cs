@@ -91,8 +91,13 @@ namespace Heft
 
         bool Make()
         {
+            if (mesh != null) Destroy(mesh); // the last tether went with its scene
+            if (tetherMaterial != null) Destroy(tetherMaterial);
             tether = tetherPrefab != null ? Instantiate(tetherPrefab) : new GameObject("Hold Tether");
             tether.name = $"{name} Tether";
+            // Lives in the holder's scene, so it stays (and goes) with them rather than with a level that unloads.
+            if (gameObject.scene.IsValid() && tether.scene != gameObject.scene)
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(tether, gameObject.scene);
             if (!tether.TryGetComponent(out MeshFilter filter)) filter = tether.AddComponent<MeshFilter>();
             if (!tether.TryGetComponent(out tetherRenderer))
             {
