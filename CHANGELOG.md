@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0] - 2026-11-24
+
+- `Rolling`: wheels for a rigidbody (a cart). Fixed wheels roll almost freely along its forward axis and grip hard
+  sideways (Side Grip, Side Friction cap so a hard shove skids, Rolling Resistance, anti-roll); swivelling wheels
+  (casters) only roll. Wheel contacts are made frictionless. Wheels spin and casters trail on every machine from how
+  it moves. Optional centre of mass. `RollMath` with tests.
+- `CargoBed`: a load box that tracks the rigidbodies in it (`Contents`, `Entered`, `Left`, every machine) and brings
+  loose ones to the bed's speed so they ride along; held things still count but aren't pushed.
+- `Carryable`: *Lift* (1 = lifted as before, 0 = only pushed and pulled along the ground, pushed where it is held),
+  *Push Effort* and `LoadMass` (what `Grabber.Load` now measures against), *Turn Yaw Only*.
+
 ## [0.2.0] - 2026-11-24
 
 - `Hinged`: hangs a networked rigidbody on a server-simulated hinge (to the world where it spawns, or to a body).

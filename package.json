@@ -1,8 +1,8 @@
 {
   "name": "com.aidancmays.heft",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "displayName": "Heft",
-  "description": "Networked physics grab-and-carry for co-op games (Netcode for GameObjects). Players grab rigidbodies at a point within their reach and pull them toward a hold point with a spring whose force is capped by their strength, so light things fly, heavy things drag, and several players can lift one together. Throwing, hold distance, tags while carrying and tags that block grabbing, all reading strength and reach from Character Stats. Hinged objects (doors, lids, book covers) with a break threshold or unbreakable.",
+  "description": "Networked physics grab-and-carry for co-op games (Netcode for GameObjects). Players grab rigidbodies at a point within their reach and pull them toward a hold point with a spring whose force is capped by their strength, so light things fly, heavy things drag, and several players can lift one together. Throwing, hold distance, tags while carrying and tags that block grabbing, all reading strength and reach from Character Stats. Hinged objects (doors, lids, book covers) with a break threshold or unbreakable. Wheeled objects (carts) that roll easily forward and grip sideways, pushed along the ground, with a cargo bed things ride in.",
   "unity": "6000.3",
   "documentationUrl": "",
   "keywords": [

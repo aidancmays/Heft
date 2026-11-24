@@ -110,7 +110,7 @@ namespace Heft
         /// lift it; 1 or more and it drags. 0 when not holding. For slowing the player down, or UI.
         /// </summary>
         public float Load => holding == null ? 0f
-            : CarryMath.Load(holding.Mass, 1f / Mathf.Max(1, holding.HolderCount),
+            : CarryMath.Load(holding.LoadMass, 1f / Mathf.Max(1, holding.HolderCount),
                 holding.Body.useGravity ? Physics.gravity.magnitude : 0f, MaxForce);
 
         /// <summary>False while the player has a Blocked By tag.</summary>

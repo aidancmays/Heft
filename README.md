@@ -33,6 +33,13 @@ limits, *Friction* (how stiffly it swings) and *Spring* back to *Rest Angle*. *U
 *Break Force* / *Break Torque* and becomes a loose object (`IsBroken`, `Broke`). The server simulates it. Set the
 Carryable's *Turn Strength* to 0 so the grip doesn't fight the hinge.
 
+**Carts** (anything on wheels players push): add **Rolling** next to the Carryable and list its wheels (centre,
+radius, a small collider each as its contact, and whether it swivels). Fixed wheels roll freely along the cart's
+forward (blue) axis and grip hard sideways, so it is far easier to push the way it rolls; casters only roll, so put
+them at the end that should swing round. On the Carryable set *Lift* to 0 (holders push it along the ground instead
+of lifting it, at the point they hold) and *Turn Yaw Only* on. Add **CargoBed** for the load space: it lists what is
+in it and helps loose things ride along.
+
 ## Reading it
 
 | | |
@@ -42,6 +49,8 @@ Carryable's *Turn Strength* to 0 so the grip doesn't fight the hinge.
 | `Grabber.Load` | Their share of the weight against their grip force: under 1 they lift it, 1+ it drags. |
 | `Grabber.Strength`, `Reach`, `MaxForce` | Read from the stats. |
 | `Carryable.IsHeld`, `HolderCount`, `HeldChanged` | Synced. `Grabbed` / `Released` events on the server. |
+| `Carryable.LoadMass`, `Lift` | The mass holders feel (all of it lifted, Push Effort of it pushed). |
+| `CargoBed.Contents`, `Entered`, `Left` | What rides in a bed, every machine. |
 | `IHoldable.IsHeld` | For code that shouldn't depend on Heft's types (a delivery zone that only takes dropped items). |
 
 Server only: `Carryable.ReleaseAll()`. Despawning a held object lets everyone go on every machine.

@@ -35,6 +35,14 @@ namespace Heft
         [SerializeField, Min(0f)] float turnDamping = 12f;
         [Tooltip("Angular damping while held, so it doesn't spin in the hand.")]
         [SerializeField, Min(0f)] float heldAngularDamping = 5f;
+        [Tooltip("Turn it only about the vertical, so it stays upright on its own wheels or base (a cart, a barrow).")]
+        [SerializeField] bool turnYawOnly;
+
+        [Header("Ground")]
+        [Tooltip("How much of its weight holders take. 1 = they lift it bodily. 0 = it stays on the ground (it rolls or slides) and grips only push and pull it along the ground, never up.")]
+        [SerializeField, Range(0f, 1f)] float lift = 1f;
+        [Tooltip("While it isn't lifted, how heavy moving it feels, as a share of its weight (for Load: how much it slows the holder).")]
+        [SerializeField, Range(0f, 1f)] float pushEffort = 0.15f;
 
         readonly NetworkVariable<byte> holderCount = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -60,6 +68,15 @@ namespace Heft
         public int MaxHolders => maxHolders;
         public Rigidbody Body => body;
         public float Mass => body.mass;
+
+        /// <summary>How much of its weight holders take (1 = lifted, 0 = pushed along the ground).</summary>
+        public float Lift { get => lift; set => lift = Mathf.Clamp01(value); }
+
+        /// <summary>
+        /// The mass holders feel: all of it when lifted, Push Effort of it when it stays on the ground. What
+        /// <see cref="Grabber.Load"/> is measured against.
+        /// </summary>
+        public float LoadMass => body.mass * (lift + (1f - lift) * pushEffort);
 
         /// <summary>The object's colliders (the holders' own colliders ignore them while holding).</summary>
         public IReadOnlyList<Collider> Colliders => colliders;
@@ -175,7 +192,8 @@ namespace Heft
 
                 HoldAim aim = grabber.ServerAim;
                 Vector3 point = body.transform.TransformPoint(grip.LocalPoint);
-                Vector3 error = aim.Point - point;
+                // What isn't lifted is only pushed along the ground: the up and down part of the pull goes.
+                Vector3 error = Flatten(aim.Point - point);
 
                 grip.SlipTimer = error.magnitude > breakDistance ? grip.SlipTimer + dt : 0f;
                 if (grip.SlipTimer > slipTime)
@@ -189,11 +207,12 @@ namespace Heft
                 // Light things alone are pulled by the middle (no torque to fight the turning); heavy things, and
                 // things held by several, from the grab point. The error is the same either way: moving the centre
                 // by it moves the grab point by it too.
-                float load = CarryMath.Load(body.mass, share, gravity.magnitude, grabber.MaxForce);
-                float lever = CarryMath.Leverage(load, grips.Count);
+                // Something pushed along the ground is pushed where it is held, so pushing a corner steers it.
+                float load = CarryMath.Load(LoadMass, share, gravity.magnitude, grabber.MaxForce);
+                float lever = Mathf.Lerp(1f, CarryMath.Leverage(load, grips.Count), lift);
                 Vector3 at = Vector3.Lerp(body.worldCenterOfMass, point, lever);
                 Vector3 velocity = Vector3.Lerp(body.linearVelocity, body.GetPointVelocity(point), lever);
-                Vector3 force = CarryMath.GripForce(error, velocity - aim.Velocity, body.mass, share, gravity,
+                Vector3 force = CarryMath.GripForce(error, Flatten(velocity - aim.Velocity), body.mass, share, gravity * lift,
                     stiffness, damping, grabber.MaxForce);
                 body.AddForceAtPosition(force, at, ForceMode.Force);
             }
@@ -204,7 +223,7 @@ namespace Heft
         void Turn(Grip grip, float share, Vector3 gravity)
         {
             // Weak holders can't swing heavy things around: scale the turn by how easily they hold their share.
-            float load = CarryMath.Load(body.mass, share, gravity.magnitude, grip.Grabber.MaxForce);
+            float load = CarryMath.Load(LoadMass, share, gravity.magnitude, grip.Grabber.MaxForce);
             float ease = load <= 0f ? 1f : Mathf.Clamp01(1f / load - 0.5f);
             if (ease <= 0f) return;
 
@@ -216,7 +235,16 @@ namespace Heft
             if (angle > 180f) angle -= 360f;
 
             Vector3 acceleration = axis * (angle * Mathf.Deg2Rad * turnStrength) - body.angularVelocity * turnDamping;
+            if (turnYawOnly) acceleration = Vector3.Project(acceleration, Vector3.up);
             body.AddTorque(acceleration * ease, ForceMode.Acceleration);
+        }
+
+        /// <summary>A pull with its vertical part scaled by Lift (all of it kept when lifted, none when pushed).</summary>
+        Vector3 Flatten(Vector3 v)
+        {
+            if (lift >= 1f) return v;
+            v.y *= lift;
+            return v;
         }
 
         /// <summary>The holder's facing as a yaw-only rotation (looking up or down doesn't tip what they carry).</summary>
