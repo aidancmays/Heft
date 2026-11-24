@@ -43,5 +43,34 @@ namespace Heft.Tests
         {
             Assert.That(RollMath.Anisotropy(1.2f, 0.03f), Is.GreaterThan(20f));
         }
+
+        [Test]
+        public void PushResistanceIsRollingAlongAndSideAcross()
+        {
+            Assert.That(RollMath.PushResistance(1f, 0.03f, 1.2f), Is.EqualTo(0.03f).Within(1e-5f));
+            Assert.That(RollMath.PushResistance(-1f, 0.03f, 1.2f), Is.EqualTo(0.03f).Within(1e-5f));
+            Assert.That(RollMath.PushResistance(0f, 0.03f, 1.2f), Is.EqualTo(1.2f).Within(1e-5f));
+        }
+
+        [Test]
+        public void SlightlyCrookedPushStaysEasy()
+        {
+            // 15 degrees off the rolling way: still far nearer rolling than sideways.
+            float crooked = RollMath.PushResistance(UnityEngine.Mathf.Cos(15f * UnityEngine.Mathf.Deg2Rad), 0.03f, 1.2f);
+            Assert.That(crooked, Is.LessThan(0.12f));
+            Assert.That(crooked, Is.GreaterThan(0.03f));
+        }
+
+        [Test]
+        public void PushResistanceRisesAsThePushTurnsAcross()
+        {
+            float last = 0f;
+            for (int degrees = 0; degrees <= 90; degrees += 10)
+            {
+                float r = RollMath.PushResistance(UnityEngine.Mathf.Cos(degrees * UnityEngine.Mathf.Deg2Rad), 0.03f, 1.2f);
+                Assert.That(r, Is.GreaterThanOrEqualTo(last - 1e-5f));
+                last = r;
+            }
+        }
     }
 }

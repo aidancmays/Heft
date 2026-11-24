@@ -37,7 +37,8 @@ Carryable's *Turn Strength* to 0 so the grip doesn't fight the hinge.
 radius, a small collider each as its contact, and whether it swivels). Fixed wheels roll freely along the cart's
 forward (blue) axis and grip hard sideways, so it is far easier to push the way it rolls; casters only roll, so put
 them at the end that should swing round. On the Carryable set *Lift* to 0 (holders push it along the ground instead
-of lifting it, at the point they hold) and *Turn Yaw Only* on. Add **CargoBed** for the load space: it lists what is
+of lifting it, at the point they hold) and *Turn Yaw Only* on. How much a cart slows its pusher (`Grabber.Load`)
+follows the way they walk: barely at all pushing it the way it rolls, a lot pushing it across. Add **CargoBed** for the load space: it lists what is
 in it and helps loose things ride along.
 
 ## Reading it

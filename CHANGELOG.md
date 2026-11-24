@@ -10,6 +10,11 @@
   loose ones to the bed's speed so they ride along; held things still count but aren't pushed.
 - `Carryable`: *Lift* (1 = lifted as before, 0 = only pushed and pulled along the ground, pushed where it is held),
   *Push Effort* and `LoadMass` (what `Grabber.Load` now measures against), *Turn Yaw Only*.
+- Pushing on wheels is light the way it rolls and heavy across: with `Rolling` on it, `Carryable.LoadMassToward(direction)`
+  takes the wheels' resistance that way (`Rolling.PushResistance`, `RollMath.PushResistance`: Rolling Resistance along,
+  easing to Side Friction across) instead of Push Effort, and `Grabber.Load` uses the way the holder walks (owner) or
+  their hold point moves (elsewhere). A holder pushing a cart forward is barely slowed and can sprint; across, they slow
+  right down.
 
 ## [0.2.0] - 2026-11-24
 

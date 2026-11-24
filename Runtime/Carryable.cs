@@ -41,7 +41,7 @@ namespace Heft
         [Header("Ground")]
         [Tooltip("How much of its weight holders take. 1 = they lift it bodily. 0 = it stays on the ground (it rolls or slides) and grips only push and pull it along the ground, never up.")]
         [SerializeField, Range(0f, 1f)] float lift = 1f;
-        [Tooltip("While it isn't lifted, how heavy moving it feels, as a share of its weight (for Load: how much it slows the holder).")]
+        [Tooltip("While it isn't lifted, how heavy moving it feels, as a share of its weight (for Load: how much it slows the holder). With Rolling on it the wheels decide instead: light the way it rolls, heavy across.")]
         [SerializeField, Range(0f, 1f)] float pushEffort = 0.15f;
 
         readonly NetworkVariable<byte> holderCount = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -57,6 +57,7 @@ namespace Heft
         readonly List<Grip> grips = new List<Grip>();
         Rigidbody body;
         Collider[] colliders;
+        Rolling rolling;
         float restAngularDamping;
 
         /// <summary>True while at least one player holds it (synced).</summary>
@@ -73,10 +74,23 @@ namespace Heft
         public float Lift { get => lift; set => lift = Mathf.Clamp01(value); }
 
         /// <summary>
-        /// The mass holders feel: all of it when lifted, Push Effort of it when it stays on the ground. What
-        /// <see cref="Grabber.Load"/> is measured against.
+        /// The mass holders feel: all of it when lifted, Push Effort of it when it stays on the ground (on wheels:
+        /// pushed the way it rolls). See <see cref="LoadMassToward"/>.
         /// </summary>
-        public float LoadMass => body.mass * (lift + (1f - lift) * pushEffort);
+        public float LoadMass => LoadMassToward(Vector3.zero);
+
+        /// <summary>
+        /// The mass holders feel moving it the way of <paramref name="direction"/> (world space; zero = the easiest
+        /// way). Lifted: all of it. On the ground: Push Effort of it, or with <see cref="Rolling"/>, the wheels'
+        /// resistance that way (tiny the way it rolls, heavy across). What <see cref="Grabber.Load"/> is measured
+        /// against.
+        /// </summary>
+        public float LoadMassToward(Vector3 direction)
+        {
+            if (lift >= 1f) return body.mass;
+            float effort = rolling != null ? rolling.PushResistance(direction) : pushEffort;
+            return body.mass * (lift + (1f - lift) * effort);
+        }
 
         /// <summary>The object's colliders (the holders' own colliders ignore them while holding).</summary>
         public IReadOnlyList<Collider> Colliders => colliders;
@@ -94,6 +108,7 @@ namespace Heft
         {
             body = GetComponent<Rigidbody>();
             colliders = GetComponentsInChildren<Collider>(true);
+            rolling = GetComponent<Rolling>();
             restAngularDamping = body.angularDamping;
         }
 

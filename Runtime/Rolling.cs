@@ -106,6 +106,31 @@ namespace Heft
             lastRootPosition = transform.position;
         }
 
+        /// <summary>
+        /// How hard it is to push the way of <paramref name="direction"/> (world space), as a share of its weight:
+        /// Rolling Resistance straight along the way it rolls, rising to Side Friction straight across (if it has
+        /// fixed wheels; on casters alone it rolls any way). Zero direction counts as along.
+        /// </summary>
+        public float PushResistance(Vector3 direction)
+        {
+            Vector3 up = transform.up;
+            Vector3 flat = Vector3.ProjectOnPlane(direction, up);
+            if (flat.sqrMagnitude < 1e-6f) return rollingResistance;
+            Vector3 forward = Vector3.ProjectOnPlane(transform.forward, up).normalized;
+            float across = HasFixedWheels ? sideFriction : rollingResistance;
+            return RollMath.PushResistance(Vector3.Dot(flat.normalized, forward), rollingResistance, across);
+        }
+
+        bool HasFixedWheels
+        {
+            get
+            {
+                foreach (Wheel w in wheels)
+                    if (w != null && !w.swivels) return true;
+                return false;
+            }
+        }
+
         /// <summary>For tools that build wheeled prefabs.</summary>
         public void AddWheel(Transform wheel, float radius, bool swivels, Collider contact)
         {
@@ -255,6 +280,18 @@ namespace Heft
             float most = Mathf.Max(0f, resistance) * weightShare;
             float stop = Mathf.Abs(forwardSpeed) * massShare / dt;
             return -Mathf.Sign(forwardSpeed) * Mathf.Min(most, stop);
+        }
+
+        /// <summary>
+        /// How hard pushing is at an angle, as a share of the weight: <paramref name="rolling"/> straight along
+        /// (<paramref name="along"/> = ±1, the cosine of the angle to the way it rolls), <paramref name="side"/>
+        /// straight across (0). It eases toward Side as the push turns from the rolling way (by the square of the
+        /// cosine), so a slightly crooked push stays easy and a push across is hard.
+        /// </summary>
+        public static float PushResistance(float along, float rolling, float side)
+        {
+            float a = Mathf.Clamp(along, -1f, 1f);
+            return Mathf.Lerp(Mathf.Max(0f, side), Mathf.Max(0f, rolling), a * a);
         }
 
         /// <summary>How much harder pushing across is than pushing along: the most side force over rolling resistance.</summary>

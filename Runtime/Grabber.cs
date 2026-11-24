@@ -67,6 +67,9 @@ namespace Heft
         Quaternion holdTurn = Quaternion.identity;
         Vector3 lastPoint;
         Vector3 smoothedVelocity;
+        Vector3 lastPosition;
+        Vector3 moveVelocity;
+        bool hasLastPosition;
         bool hasLastPoint;
         float aimReceivedAt;
         HoldAim grabAim;
@@ -107,10 +110,13 @@ namespace Heft
 
         /// <summary>
         /// How hard what they hold is for them: the weight of their share against their max force. Under 1 they can
-        /// lift it; 1 or more and it drags. 0 when not holding. For slowing the player down, or UI.
+        /// lift it; 1 or more and it drags. 0 when not holding. For slowing the player down, or UI. For something
+        /// pushed on wheels it depends on which way they move it (see <see cref="Carryable.LoadMassToward"/>): the
+        /// owner's own movement, elsewhere how their hold point moves.
         /// </summary>
         public float Load => holding == null ? 0f
-            : CarryMath.Load(holding.LoadMass, 1f / Mathf.Max(1, holding.HolderCount),
+            : CarryMath.Load(holding.LoadMassToward(IsOwner ? moveVelocity : aimState.Value.Velocity),
+                1f / Mathf.Max(1, holding.HolderCount),
                 holding.Body.useGravity ? Physics.gravity.magnitude : 0f, MaxForce);
 
         /// <summary>False while the player has a Blocked By tag.</summary>
@@ -234,6 +240,12 @@ namespace Heft
             smoothedVelocity = Vector3.Lerp(smoothedVelocity, velocity, 1f - Mathf.Exp(-20f * dt));
             lastPoint = point;
             hasLastPoint = true;
+
+            // Which way the holder walks (not where they look), for Load on wheeled things.
+            Vector3 moved = hasLastPosition ? (transform.position - lastPosition) / dt : Vector3.zero;
+            moveVelocity = Vector3.Lerp(moveVelocity, moved, 1f - Mathf.Exp(-20f * dt));
+            lastPosition = transform.position;
+            hasLastPosition = true;
 
             if (holding == null && !force) return;
 
