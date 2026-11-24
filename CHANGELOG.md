@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.1.1] - 2026-11-24
+
+- Unity .meta files, so the package loads from a git URL.
+
 ## [0.1.0] - 2026-11-24
 
 - First version: `Carryable` (server-simulated grab points pulled by strength-capped springs, several holders,
