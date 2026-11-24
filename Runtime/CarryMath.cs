@@ -72,6 +72,41 @@ namespace Heft
         public static Quaternion HoldTarget(Quaternion facing, Quaternion turn, Quaternion relative) =>
             facing * Normalized(turn) * relative;
 
+        /// <summary>
+        /// How close a grip is to slipping, 0..1, for showing it. A grip slips once its grab point has been more than
+        /// <paramref name="breakDistance"/> from the hold point for <paramref name="slipTime"/>: up to the break
+        /// distance strain rises with the stretch to <paramref name="atBreak"/>, then the rest of the way as the slip
+        /// timer runs out. 1 = it is letting go.
+        /// </summary>
+        public static float Strain(float stretch, float breakDistance, float slipTimer, float slipTime, float atBreak = 0.8f)
+        {
+            atBreak = Mathf.Clamp01(atBreak);
+            if (breakDistance <= 0f) return 1f;
+            if (stretch <= breakDistance) return atBreak * Mathf.Clamp01(stretch / breakDistance);
+            float slipping = slipTime <= 0f ? 1f : Mathf.Clamp01(slipTimer / slipTime);
+            return atBreak + (1f - atBreak) * slipping;
+        }
+
+        /// <summary>A point along a quadratic curve from a through control (pulled toward) to b; t 0..1.</summary>
+        public static Vector3 Curve(Vector3 a, Vector3 control, Vector3 b, float t)
+        {
+            float u = 1f - t;
+            return u * u * a + 2f * u * t * control + t * t * b;
+        }
+
+        /// <summary>
+        /// The control point of a tether from <paramref name="from"/> to <paramref name="to"/> (the grab point): bent
+        /// toward <paramref name="pull"/> (where the holder is pulling it, the hold point) by <paramref name="bend"/>
+        /// (0..1) and sagging by <paramref name="sag"/> of its length when slack, straightening as strain rises.
+        /// </summary>
+        public static Vector3 TetherControl(Vector3 from, Vector3 to, Vector3 pull, float bend, float sag, float strain)
+        {
+            Vector3 middle = (from + to) * 0.5f;
+            float length = Vector3.Distance(from, to);
+            Vector3 toward = Vector3.Lerp(middle, pull, Mathf.Clamp01(bend));
+            return toward + Vector3.down * (sag * length * (1f - Mathf.Clamp01(strain)));
+        }
+
         /// <summary>The quaternion made unit length; a zero (default) one becomes identity.</summary>
         public static Quaternion Normalized(Quaternion q)
         {

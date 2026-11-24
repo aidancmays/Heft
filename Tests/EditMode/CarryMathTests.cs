@@ -120,6 +120,48 @@ namespace Heft.Tests
         }
 
         [Test]
+        public void Strain_RisesWithStretchThenWithTheSlipTimer()
+        {
+            Assert.AreEqual(0f, CarryMath.Strain(0f, 1.75f, 0f, 0.3f), 1e-5f);
+            Assert.AreEqual(0.4f, CarryMath.Strain(0.875f, 1.75f, 0f, 0.3f), 1e-5f);
+            Assert.AreEqual(0.8f, CarryMath.Strain(1.75f, 1.75f, 0f, 0.3f), 1e-5f);
+            Assert.AreEqual(0.9f, CarryMath.Strain(2f, 1.75f, 0.15f, 0.3f), 1e-5f);
+            Assert.AreEqual(1f, CarryMath.Strain(2f, 1.75f, 0.3f, 0.3f), 1e-5f);
+            Assert.AreEqual(1f, CarryMath.Strain(2f, 1.75f, 9f, 0.3f), 1e-5f);
+        }
+
+        [Test]
+        public void Strain_EdgeCases()
+        {
+            Assert.AreEqual(1f, CarryMath.Strain(0.1f, 0f, 0f, 0.3f), "no break distance: always at the limit");
+            Assert.AreEqual(1f, CarryMath.Strain(2f, 1f, 0f, 0f), "no slip time: past the distance is letting go");
+            Assert.AreEqual(0.5f, CarryMath.Strain(1f, 1f, 0f, 0.3f, 0.5f), 1e-5f);
+        }
+
+        [Test]
+        public void Curve_PassesThroughItsEnds()
+        {
+            Vector3 a = new Vector3(1f, 2f, 3f), c = new Vector3(0f, 5f, 0f), b = new Vector3(-4f, 0f, 2f);
+            Assert.AreEqual(0f, Vector3.Distance(a, CarryMath.Curve(a, c, b, 0f)), 1e-5f);
+            Assert.AreEqual(0f, Vector3.Distance(b, CarryMath.Curve(a, c, b, 1f)), 1e-5f);
+            Vector3 mid = CarryMath.Curve(a, c, b, 0.5f);
+            Assert.AreEqual(0f, Vector3.Distance(0.25f * a + 0.5f * c + 0.25f * b, mid), 1e-5f);
+        }
+
+        [Test]
+        public void TetherControl_BendsTowardThePull_SagsWhenSlack_StraightensUnderStrain()
+        {
+            Vector3 from = Vector3.zero, to = new Vector3(0f, 0f, 2f), pull = new Vector3(1f, 0f, 1f);
+            Vector3 slack = CarryMath.TetherControl(from, to, pull, 0.5f, 0.1f, 0f);
+            Vector3 taut = CarryMath.TetherControl(from, to, pull, 0.5f, 0.1f, 1f);
+            Assert.AreEqual(0.5f, taut.x, 1e-5f, "half way from the middle to the pull");
+            Assert.AreEqual(0f, taut.y, 1e-5f, "no sag at full strain");
+            Assert.AreEqual(-0.2f, slack.y, 1e-5f, "sags a tenth of its 2 m length");
+            Vector3 straight = CarryMath.TetherControl(from, to, pull, 0f, 0f, 0f);
+            Assert.AreEqual(0f, Vector3.Distance(new Vector3(0f, 0f, 1f), straight), 1e-5f);
+        }
+
+        [Test]
         public void Leverage_StepWhenThresholdsMeet()
         {
             Assert.AreEqual(0f, CarryMath.Leverage(0.4f, 1, 0.5f, 0.5f));

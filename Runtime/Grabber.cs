@@ -54,6 +54,9 @@ namespace Heft
         readonly NetworkVariable<HoldAim> aimState = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         const ulong None = ulong.MaxValue;
         readonly NetworkVariable<ulong> held = new(None, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // Where on the held object the grip is (its local space), and how close it is to slipping (0..255).
+        readonly NetworkVariable<Vector3> gripLocal = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<byte> strain = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         StatSheet sheet;
         TagHolder tags;
@@ -89,6 +92,15 @@ namespace Heft
 
         /// <summary>Owner: how far ahead the hold point is.</summary>
         public float HoldDistance => holdDistance;
+
+        /// <summary>How close the grip is to slipping, 0..1 (every machine; see CarryMath.Strain). 0 when not holding.</summary>
+        public float Strain => holding != null ? strain.Value / 255f : 0f;
+
+        /// <summary>Where on what they hold the grip is, in world space (every machine). Their own position when not holding.</summary>
+        public Vector3 GripPoint => holding != null ? holding.transform.TransformPoint(gripLocal.Value) : transform.position;
+
+        /// <summary>Where they want the grip (every machine): the owner's own aim, or the last one they sent.</summary>
+        public Vector3 HoldPoint => IsOwner ? Aim.position + Aim.forward * holdDistance : aimState.Value.Point;
 
         /// <summary>Owner: how they have turned what they hold (see <see cref="Rotate"/>), relative to their facing.</summary>
         public Quaternion HoldTurn => holdTurn;
@@ -316,6 +328,8 @@ namespace Heft
             aimReceivedAt = Time.time;
             if (carryable.AddGrip(this, localPoint, aimAtGrab.Forward))
             {
+                gripLocal.Value = localPoint;
+                strain.Value = 0;
                 held.Value = carryable.NetworkObjectId;
                 SetHolding(carryable); // the host sees it at once
             }
@@ -340,8 +354,22 @@ namespace Heft
         internal void ServerLetGo(Carryable target)
         {
             if (holding != null && holding != target) return;
-            if (IsSpawned) held.Value = None;
+            if (IsSpawned)
+            {
+                held.Value = None;
+                strain.Value = 0;
+            }
             SetHolding(null);
+        }
+
+        /// <summary>Server: the Carryable reports how close this grip is to slipping (0..1), synced in steps of 1/255.</summary>
+        internal void ServerSetStrain(float value)
+        {
+            if (!IsSpawned) return;
+            byte quantized = (byte)Mathf.RoundToInt(Mathf.Clamp01(value) * 255f);
+            // Small changes wait, so a jittering grip doesn't send every tick.
+            if (Mathf.Abs(quantized - strain.Value) >= 3 || (quantized == 0) != (strain.Value == 0) || quantized == 255)
+                strain.Value = quantized;
         }
     }
 }

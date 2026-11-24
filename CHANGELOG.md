@@ -7,6 +7,7 @@
   and `Broke` on every machine, `Angle` on every machine, `BreakNow()` on the server. `HingeMath.AngleAbout` with tests.
 - Carrying: an item held by one person is pulled at its centre of mass (no jitter on light items), blending back to the grip point the heavier the load; with several holders each pull stays at its grip.
 - Turning what you hold: `Grabber.Rotate(yaw, pitch)` (owner) turns the held item about the holder's up and right axes; the turn is synced in `HoldAim.Rotation`, kept relative to where they look, and reset on each grab. With several holders the first one's turn steers it. The game maps the input (e.g. hold a key and move the mouse).
+- `HoldTether`: a rope-like tube from the holder's hand to their grip, on every machine, bending toward the pull, sagging when slack and turning from Slack to Taut colour as the grip nears slipping. `Grabber.Strain` (0..1, synced), `GripPoint`, `HoldPoint`; `CarryMath.Strain` (stretch up to Break Distance, then the slip timer), `Curve`, `TetherControl`, with tests. Optional tether prefab so games can add their own components.
 
 ## [0.1.1] - 2026-11-24
 

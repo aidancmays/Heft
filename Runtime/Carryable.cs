@@ -184,6 +184,7 @@ namespace Heft
                     continue;
                 }
                 grips[i] = grip;
+                grabber.ServerSetStrain(CarryMath.Strain(error.magnitude, breakDistance, grip.SlipTimer, slipTime));
 
                 // Light things alone are pulled by the middle (no torque to fight the turning); heavy things, and
                 // things held by several, from the grab point. The error is the same either way: moving the centre
