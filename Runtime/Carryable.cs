@@ -185,10 +185,16 @@ namespace Heft
                 }
                 grips[i] = grip;
 
-                Vector3 relativeVelocity = body.GetPointVelocity(point) - aim.Velocity;
-                Vector3 force = CarryMath.GripForce(error, relativeVelocity, body.mass, share, gravity,
+                // Light things alone are pulled by the middle (no torque to fight the turning); heavy things, and
+                // things held by several, from the grab point. The error is the same either way: moving the centre
+                // by it moves the grab point by it too.
+                float load = CarryMath.Load(body.mass, share, gravity.magnitude, grabber.MaxForce);
+                float lever = CarryMath.Leverage(load, grips.Count);
+                Vector3 at = Vector3.Lerp(body.worldCenterOfMass, point, lever);
+                Vector3 velocity = Vector3.Lerp(body.linearVelocity, body.GetPointVelocity(point), lever);
+                Vector3 force = CarryMath.GripForce(error, velocity - aim.Velocity, body.mass, share, gravity,
                     stiffness, damping, grabber.MaxForce);
-                body.AddForceAtPosition(force, point, ForceMode.Force);
+                body.AddForceAtPosition(force, at, ForceMode.Force);
             }
 
             if (grips.Count > 0 && turnStrength > 0f) Turn(grips[0], share, gravity);
@@ -201,7 +207,8 @@ namespace Heft
             float ease = load <= 0f ? 1f : Mathf.Clamp01(1f / load - 0.5f);
             if (ease <= 0f) return;
 
-            Quaternion target = Facing(grip.Grabber.ServerAim.Forward) * grip.Relative;
+            HoldAim aim = grip.Grabber.ServerAim;
+            Quaternion target = CarryMath.HoldTarget(Facing(aim.Forward), aim.Rotation, grip.Relative);
             Quaternion delta = target * Quaternion.Inverse(body.rotation);
             delta.ToAngleAxis(out float angle, out Vector3 axis);
             if (float.IsNaN(axis.x) || float.IsInfinity(axis.x)) return;

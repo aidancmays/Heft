@@ -34,6 +34,52 @@ namespace Heft
             return maxForce <= 0f ? float.PositiveInfinity : weight / maxForce;
         }
 
+        /// <summary>
+        /// How much of a grip's pull acts at the grab point (1) rather than at the object's centre of mass (0).
+        /// One holder lifting something light pulls it by the middle: pulled by an end, a small light object (a
+        /// bottle by its neck) has so little inertia that the pull's torque and the turning fight each other and it
+        /// spins and jitters. Heavier loads move toward the grab point, so what is too heavy pivots and drags from
+        /// where it is held; with several holders each pulls at their own point, so they can tip it between them.
+        /// </summary>
+        /// <param name="load">The holder's <see cref="Load"/> for their share.</param>
+        /// <param name="holders">How many hold it.</param>
+        /// <param name="lightLoad">At or below this load the pull is all at the centre of mass.</param>
+        /// <param name="heavyLoad">At or above this load it is all at the grab point.</param>
+        public static float Leverage(float load, int holders, float lightLoad = 0.5f, float heavyLoad = 1f)
+        {
+            if (holders > 1) return 1f;
+            if (heavyLoad <= lightLoad) return load >= heavyLoad ? 1f : 0f;
+            return Mathf.Clamp01((load - lightLoad) / (heavyLoad - lightLoad));
+        }
+
+        /// <summary>
+        /// A holder's turn of what they hold, turned further: <paramref name="yaw"/> degrees about their up axis and
+        /// <paramref name="pitch"/> degrees about their right axis (positive tips the far side up), both in their
+        /// facing's frame, so "left" and "up" stay left and up on screen however it is already turned. A default
+        /// (all zero) quaternion counts as no turn.
+        /// </summary>
+        public static Quaternion TurnHold(Quaternion current, float yaw, float pitch)
+        {
+            current = Normalized(current);
+            Quaternion turned = Quaternion.AngleAxis(yaw, Vector3.up) * Quaternion.AngleAxis(-pitch, Vector3.right) * current;
+            return Normalized(turned);
+        }
+
+        /// <summary>
+        /// The rotation a holder wants the object at: their (yaw-only) facing, then their turn, then the facing the
+        /// object had relative to them when grabbed.
+        /// </summary>
+        public static Quaternion HoldTarget(Quaternion facing, Quaternion turn, Quaternion relative) =>
+            facing * Normalized(turn) * relative;
+
+        /// <summary>The quaternion made unit length; a zero (default) one becomes identity.</summary>
+        public static Quaternion Normalized(Quaternion q)
+        {
+            float length = Mathf.Sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+            if (length < 1e-6f) return Quaternion.identity;
+            return new Quaternion(q.x / length, q.y / length, q.z / length, q.w / length);
+        }
+
         /// <summary>The speed change a throw gives an object: impulse over mass, never more than maxSpeed.</summary>
         public static float ThrowSpeed(float impulse, float mass, float maxSpeed) =>
             mass <= 0f ? maxSpeed : Mathf.Min(maxSpeed, impulse / mass);

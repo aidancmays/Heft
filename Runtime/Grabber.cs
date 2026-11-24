@@ -61,6 +61,7 @@ namespace Heft
         Carryable holding;
         bool carryingTagAdded;
         float holdDistance;
+        Quaternion holdTurn = Quaternion.identity;
         Vector3 lastPoint;
         Vector3 smoothedVelocity;
         bool hasLastPoint;
@@ -88,6 +89,9 @@ namespace Heft
 
         /// <summary>Owner: how far ahead the hold point is.</summary>
         public float HoldDistance => holdDistance;
+
+        /// <summary>Owner: how they have turned what they hold (see <see cref="Rotate"/>), relative to their facing.</summary>
+        public Quaternion HoldTurn => holdTurn;
 
         /// <summary>
         /// How hard what they hold is for them: the weight of their share against their max force. Under 1 they can
@@ -221,10 +225,11 @@ namespace Heft
 
             if (holding == null && !force) return;
 
-            var next = new HoldAim { Point = point, Velocity = smoothedVelocity, Forward = from.forward };
+            var next = new HoldAim { Point = point, Velocity = smoothedVelocity, Forward = from.forward, Rotation = holdTurn };
             HoldAim current = aimState.Value;
             if (force || (next.Point - current.Point).sqrMagnitude > 1e-6f || (next.Velocity - current.Velocity).sqrMagnitude > 1e-4f
-                || Vector3.Angle(next.Forward, current.Forward) > 0.5f)
+                || Vector3.Angle(next.Forward, current.Forward) > 0.5f
+                || Quaternion.Angle(next.Rotation, CarryMath.Normalized(current.Rotation)) > 0.25f)
                 aimState.Value = next;
         }
 
@@ -257,6 +262,7 @@ namespace Heft
             if (target == null) return false;
 
             holdDistance = Mathf.Clamp(hit.distance, minHoldDistance, Reach);
+            holdTurn = Quaternion.identity; // each grab starts as it was picked up
             SendAim(true);
             GrabRpc(target.NetworkObject, target.transform.InverseTransformPoint(hit.point), aimState.Value);
             return true;
@@ -278,6 +284,18 @@ namespace Heft
         public void AdjustHoldDistance(float delta)
         {
             if (IsOwner) holdDistance = Mathf.Clamp(holdDistance + delta, minHoldDistance, Reach);
+        }
+
+        /// <summary>
+        /// Owner: turns what they hold, <paramref name="yaw"/> degrees about their up axis and <paramref name="pitch"/>
+        /// degrees about their right axis (positive tips the far side up). The turn is kept relative to where they
+        /// look for the rest of the grab, and starts again at none on the next grab. With several holders the first
+        /// one's turn steers it. How far it actually turns depends on the Carryable's turning and the holder's strength.
+        /// </summary>
+        public void Rotate(float yaw, float pitch)
+        {
+            if (!IsOwner || holding == null) return;
+            holdTurn = CarryMath.TurnHold(holdTurn, yaw, pitch);
         }
 
         // ---- Server ----
