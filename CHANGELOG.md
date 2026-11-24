@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.0] - 2026-11-24
+
+- `Hinged`: hangs a networked rigidbody on a server-simulated hinge (to the world where it spawns, or to a body).
+  Limits, friction, an optional spring back to a rest angle, and a break force and torque, or unbreakable. `IsBroken`
+  and `Broke` on every machine, `Angle` on every machine, `BreakNow()` on the server. `HingeMath.AngleAbout` with tests.
+
 ## [0.1.1] - 2026-11-24
 
 - Unity .meta files, so the package loads from a git URL.

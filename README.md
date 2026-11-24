@@ -27,6 +27,12 @@ server simulates it and clients watch. Register the prefab in your network prefa
 Grabber reads no input. Your owner-side input code calls `TryGrab()`, `Release()`, `Throw()` and
 `AdjustHoldDistance(delta)`.
 
+**Hinged objects** (a door, a lid, a book cover): add **Hinged** next to the Carryable. The hinge is made where the
+object spawns, about *Axis* through *Anchor* (local space), hanging from *Connected Body* or the world. Optional
+limits, *Friction* (how stiffly it swings) and *Spring* back to *Rest Angle*. *Unbreakable*, or it tears off at
+*Break Force* / *Break Torque* and becomes a loose object (`IsBroken`, `Broke`). The server simulates it. Set the
+Carryable's *Turn Strength* to 0 so the grip doesn't fight the hinge.
+
 ## Reading it
 
 | | |
