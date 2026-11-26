@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.0] - 2026-11-26
+
+- Carryable: Loose Linear/Angular Damping while not held, so dropped and thrown things settle.
+- Grabber: Throw Mass Floor, and Max Throw Speed default 12 -> 8, so light things aren't thrown so hard.
+
 ## [0.3.0] - 2026-11-24
 
 - `Rolling`: wheels for a rigidbody (a cart). Fixed wheels roll almost freely along its forward axis and grip hard

@@ -52,6 +52,12 @@ namespace Heft.Tests
         }
 
         [Test]
+        public void ThrowSpeed_MassFloorTamesLightThings()
+        {
+            Assert.AreEqual(5f, CarryMath.ThrowSpeed(15f, 1f, 12f, 2f), 1e-5f);
+        }
+
+        [Test]
         public void Leverage_LightThingsAloneArePulledByTheMiddle()
         {
             Assert.AreEqual(0f, CarryMath.Leverage(0f, 1));

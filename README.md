@@ -15,7 +15,8 @@ thing share its weight and can lift what none of them could alone.
 
 **Objects**: add **Carryable** to a networked prefab with a NetworkObject, a Rigidbody (its mass is what strength is
 measured against) and colliders. Sync it with a NetworkTransform in **Server** authority plus a NetworkRigidbody: the
-server simulates it and clients watch. Register the prefab in your network prefab list as usual.
+server simulates it and clients watch. Register the prefab in your network prefab list as usual. *Loose Linear Damping*
+and *Loose Angular Damping* (raised on the Rigidbody, never lowered) make dropped and thrown things settle.
 
 **Players**: add **Grabber** to the player root (with a NetworkObject). Set *Aim* to the camera or head. Optionally:
 
@@ -23,6 +24,8 @@ server simulates it and clients watch. Register the prefab in your network prefa
   Grip force = strength x *Force Per Strength* newtons.
 - *Carrying Tag*: held on every machine while carrying (condition stat modifiers on it, or slow the player).
 - *Blocked By*: tags that make the player let go and stop grabbing (knocked out, dead).
+- *Throw Mass Floor*: added to an object's mass when throwing (speed = impulse / (mass + floor), capped at *Max Throw
+  Speed*), so light things aren't thrown much harder than heavy ones.
 
 Grabber reads no input. Your owner-side input code calls `TryGrab()`, `Release()`, `Throw()` and
 `AdjustHoldDistance(delta)`.

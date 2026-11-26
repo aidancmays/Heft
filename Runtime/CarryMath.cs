@@ -115,8 +115,11 @@ namespace Heft
             return new Quaternion(q.x / length, q.y / length, q.z / length, q.w / length);
         }
 
-        /// <summary>The speed change a throw gives an object: impulse over mass, never more than maxSpeed.</summary>
-        public static float ThrowSpeed(float impulse, float mass, float maxSpeed) =>
-            mass <= 0f ? maxSpeed : Mathf.Min(maxSpeed, impulse / mass);
+        /// <summary>
+        /// The speed change a throw gives an object: impulse over mass, never more than maxSpeed. Mass Floor is added to
+        /// the mass so very light things don't fly off at the cap.
+        /// </summary>
+        public static float ThrowSpeed(float impulse, float mass, float maxSpeed, float massFloor = 0f) =>
+            mass <= 0f && massFloor <= 0f ? maxSpeed : Mathf.Min(maxSpeed, impulse / Mathf.Max(1e-4f, mass + massFloor));
     }
 }

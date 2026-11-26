@@ -44,6 +44,11 @@ namespace Heft
         [Tooltip("While it isn't lifted, how heavy moving it feels, as a share of its weight (for Load: how much it slows the holder). With Rolling on it the wheels decide instead: light the way it rolls, heavy across.")]
         [SerializeField, Range(0f, 1f)] float pushEffort = 0.15f;
 
+        [Header("Loose")]
+        [Tooltip("Damping while nobody holds it, so dropped and thrown things settle instead of rolling and spinning forever.")]
+        [SerializeField, Min(0f)] float looseLinearDamping = 0.15f;
+        [SerializeField, Min(0f)] float looseAngularDamping = 1.5f;
+
         readonly NetworkVariable<byte> holderCount = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         struct Grip
@@ -109,6 +114,8 @@ namespace Heft
             body = GetComponent<Rigidbody>();
             colliders = GetComponentsInChildren<Collider>(true);
             rolling = GetComponent<Rolling>();
+            body.linearDamping = Mathf.Max(body.linearDamping, looseLinearDamping);
+            body.angularDamping = Mathf.Max(body.angularDamping, looseAngularDamping);
             restAngularDamping = body.angularDamping;
         }
 
@@ -164,10 +171,10 @@ namespace Heft
         }
 
         /// <summary>Server: sends it flying along a direction (after the thrower has let go).</summary>
-        internal void Throw(Vector3 direction, float impulse, float maxSpeed)
+        internal void Throw(Vector3 direction, float impulse, float maxSpeed, float massFloor)
         {
             if (!IsServer || direction.sqrMagnitude < 1e-6f) return;
-            body.AddForce(direction.normalized * CarryMath.ThrowSpeed(impulse, body.mass, maxSpeed), ForceMode.VelocityChange);
+            body.AddForce(direction.normalized * CarryMath.ThrowSpeed(impulse, body.mass, maxSpeed, massFloor), ForceMode.VelocityChange);
         }
 
         void RemoveGripAt(int index)

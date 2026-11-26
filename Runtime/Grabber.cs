@@ -43,7 +43,9 @@ namespace Heft
         [Header("Throwing")]
         [Tooltip("Throw impulse (N s) per point of strength.")]
         [SerializeField, Min(0f)] float throwImpulsePerStrength = 1.5f;
-        [SerializeField, Min(0f)] float maxThrowSpeed = 12f;
+        [SerializeField, Min(0f)] float maxThrowSpeed = 8f;
+        [Tooltip("Added to the object's mass when throwing, so light things aren't thrown much harder than heavy ones.")]
+        [SerializeField, Min(0f)] float throwMassFloor = 2f;
 
         [Header("Tags")]
         [Tooltip("Optional. Held on every machine while carrying something (condition modifiers on it).")]
@@ -359,7 +361,7 @@ namespace Heft
             Carryable target = holding;
             if (target == null) return;
             target.RemoveGrip(this);
-            target.Throw(direction, Strength * throwImpulsePerStrength, maxThrowSpeed);
+            target.Throw(direction, Strength * throwImpulsePerStrength, maxThrowSpeed, throwMassFloor);
         }
 
         /// <summary>Server: called by the Carryable when this player's grip ends, for whatever reason.</summary>
